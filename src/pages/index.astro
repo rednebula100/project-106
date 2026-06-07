@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import BlackHole from '../components/BlackHole.astro';
 
 const base = import.meta.env.BASE_URL;
 const sections = [
@@ -36,6 +37,7 @@ const sections = [
 ];
 ---
 <BaseLayout title="메인">
+  <BlackHole />
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function () {
       var STORAGE_KEY = 'ego_auth_v1';
@@ -95,22 +97,29 @@ const sections = [
     </div>
   </div>
 
-  <div class="page-header">
-    <h1 class="page-title">[ PROJECT 106 ]</h1>
-    <p class="page-subtitle">EGO 내부 열람 시스템 — 인가된 접근만 허용</p>
-  </div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">[ PROJECT 106 ]</h1>
+      <p class="page-subtitle">EGO 내부 열람 시스템 — 인가된 접근만 허용</p>
+    </div>
 
-  <div class="grid">
-    {sections.map((s) => (
-      <a href={s.href} class="card">
-        <div class="card-title">{s.title}</div>
-        <div class="card-desc">{s.desc}</div>
-      </a>
-    ))}
+    <div class="grid">
+      {sections.map((s) => (
+        <a href={s.href} class="card">
+          <div class="card-title">{s.title}</div>
+          <div class="card-desc">{s.desc}</div>
+        </a>
+      ))}
+    </div>
   </div>
 </BaseLayout>
 
 <style>
+  .page-content {
+    position: relative;
+    z-index: 1;
+  }
+
   .page-header {
     margin-bottom: 2rem;
     padding-bottom: 1rem;
