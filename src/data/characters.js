@@ -7,8 +7,8 @@ export const characters = [
     status: "생존",
     age: "17",
     school: "현무고등학교 1학년 6반",
-    ability: "자기장 조작 / 질량 증가",
-    description: "평범해 보이지만 EGO가 가장 오래 관찰해온 인물. 자신의 능력을 인지하고 있으나 진실을 회피 중.",
+    ability: "자기장 조작 / 질량 증가 / 초거대 질량 블랙홀 생성",
+    description: "평범해 보이지만 EGO가 가장 오래 관찰해온 인물. 블랙홀과 화이트홀을 만들 수 있는 유일한 존재. 자신의 능력 규모를 알면서 외면 중.",
   },
   {
     slug: "kang-ma",
