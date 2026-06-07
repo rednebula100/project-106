@@ -23,6 +23,29 @@ const { title = '메인' } = Astro.props;
       </main>
     </div>
     <Footer />
+    <script is:inline>
+      (function () {
+        var h1 = document.querySelector('main h1');
+        if (!h1) return;
+        var text = h1.textContent || '';
+        h1.textContent = '';
+        var cursor = document.createElement('span');
+        cursor.className = 'type-cursor';
+        cursor.textContent = '|';
+        h1.appendChild(cursor);
+        var i = 0;
+        function tick() {
+          if (i < text.length) {
+            h1.insertBefore(document.createTextNode(text[i]), cursor);
+            i++;
+            setTimeout(tick, 50);
+          } else {
+            setTimeout(function () { cursor.remove(); }, 1000);
+          }
+        }
+        tick();
+      })();
+    </script>
   </body>
 </html>
 

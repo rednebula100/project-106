@@ -36,6 +36,65 @@ const sections = [
 ];
 ---
 <BaseLayout title="메인">
+  <script is:inline>
+    (function () {
+      var STORAGE_KEY = 'ego_auth_v1';
+
+      function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+      async function typeLine(container, text, color) {
+        var div = document.createElement('div');
+        if (color) div.style.color = color;
+        container.appendChild(div);
+        for (var i = 0; i < text.length; i++) {
+          div.textContent += text[i];
+          await sleep(45);
+        }
+      }
+
+      async function runAuth() {
+        var overlay = document.getElementById('ego-auth-overlay');
+        if (!overlay) return;
+
+        var linesEl = document.getElementById('ego-auth-lines');
+        var msgs = [
+          { text: 'EGO INTERNAL SYSTEM v4.2.1', color: '#4a9eff' },
+          { text: '접속 요청 감지 중...', color: null },
+          { text: '신원 확인 중...', color: null },
+          { text: '열람 등급 검증 중...', color: null },
+          { text: '// 접속 허가', color: '#4a9eff' },
+        ];
+
+        for (var i = 0; i < msgs.length; i++) {
+          await typeLine(linesEl, msgs[i].text, msgs[i].color);
+          await sleep(250);
+        }
+
+        await sleep(900);
+        overlay.style.transition = 'opacity 0.7s ease';
+        overlay.style.opacity = '0';
+        await sleep(750);
+        overlay.remove();
+      }
+
+      var overlay = document.getElementById('ego-auth-overlay');
+      if (!overlay) return;
+
+      if (sessionStorage.getItem(STORAGE_KEY)) {
+        overlay.remove();
+      } else {
+        sessionStorage.setItem(STORAGE_KEY, '1');
+        runAuth();
+      }
+    })();
+  </script>
+
+  <div id="ego-auth-overlay">
+    <div id="ego-auth-box">
+      <div id="ego-auth-lines"></div>
+    </div>
+  </div>
+
   <div class="page-header">
     <h1 class="page-title">[ PROJECT 106 ]</h1>
     <p class="page-subtitle">EGO 내부 열람 시스템 — 인가된 접근만 허용</p>
@@ -102,5 +161,36 @@ const sections = [
     font-size: 0.76rem;
     color: var(--text-dim);
     line-height: 1.55;
+  }
+
+  #ego-auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Consolas, monospace;
+  }
+
+  #ego-auth-box {
+    width: min(420px, 88vw);
+    border: 1px solid #2a2a2a;
+    padding: 2rem 2.5rem;
+    background: #0d0d0d;
+  }
+
+  #ego-auth-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 7rem;
+  }
+
+  #ego-auth-lines div {
+    font-size: 0.82rem;
+    color: #c8c8c8;
+    letter-spacing: 0.04em;
   }
 </style>
