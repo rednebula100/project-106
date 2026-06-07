@@ -37,7 +37,7 @@ const sections = [
 ---
 <BaseLayout title="메인">
   <script is:inline>
-    (function () {
+    document.addEventListener('DOMContentLoaded', function () {
       var STORAGE_KEY = 'ego_auth_v1';
 
       function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
@@ -86,7 +86,7 @@ const sections = [
         sessionStorage.setItem(STORAGE_KEY, '1');
         runAuth();
       }
-    })();
+    });
   </script>
 
   <div id="ego-auth-overlay">
