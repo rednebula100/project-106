@@ -1,0 +1,252 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { organizations } from '../../data/organizations.js';
+
+export function getStaticPaths() {
+  return organizations.map((org) => ({
+    params: { slug: org.slug },
+    props: { org },
+  }));
+}
+
+const { org } = Astro.props;
+
+const statusColor = {
+  '활동 중': '#ffaa4a',
+  '해산': '#ff4a4a',
+};
+
+const hasCodename = org.members.some((m) => m.codename);
+---
+<BaseLayout title={org.name}>
+  <div class="doc">
+
+    <div class="doc-header">
+      <div class="doc-name">{org.name}</div>
+      <span
+        class="doc-status"
+        style={`color: ${statusColor[org.status] ?? '#c8c8c8'}; border-color: ${statusColor[org.status] ?? '#2a2a2a'}`}
+      >
+        {org.status}
+      </span>
+    </div>
+    <div class="doc-type">{org.type} — EGO 내부 문서</div>
+
+    <table class="info-table">
+      <tbody>
+        <tr>
+          <th>설립</th>
+          <td>{org.founded}</td>
+        </tr>
+        <tr>
+          <th>국장</th>
+          <td>{org.director}</td>
+        </tr>
+        <tr>
+          <th>부국장</th>
+          <td>{org.deputy}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    {org.divisions.length > 0 && (
+      <div class="section">
+        <div class="section-label">[ 내부 직군 ]</div>
+        <ul class="division-list">
+          {org.divisions.map((d) => (
+            <li>{d}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <div class="section">
+      <div class="section-label">[ 등록 인원 ]</div>
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>역할</th>
+            {hasCodename && <th>코드명</th>}
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          {org.members.map((m) => (
+            <tr>
+              <td>{m.name}</td>
+              <td>{m.role}</td>
+              {hasCodename && <td class="codename">{m.codename ?? '—'}</td>}
+              <td class="note">{m.note ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-note">
+      <div class="note-label">[ 개요 ]</div>
+      <p class="note-body">{org.description}</p>
+    </div>
+
+    <div class="back-link">
+      <a href="/organizations">← 목록으로 돌아가기</a>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .doc {
+    max-width: 700px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
+  .doc-name {
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+    color: var(--text-bright);
+  }
+
+  .doc-status {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    border: 1px solid;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .doc-type {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-table th,
+  .info-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    text-align: left;
+    font-weight: normal;
+  }
+
+  .info-table th {
+    width: 90px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    background: var(--bg-secondary);
+    white-space: nowrap;
+  }
+
+  .section {
+    margin-bottom: 1.5rem;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .division-list {
+    list-style: none;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+
+  .division-list li {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .division-list li:last-child {
+    border-bottom: none;
+  }
+
+  .member-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .member-table th,
+  .member-table td {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    text-align: left;
+    font-weight: normal;
+  }
+
+  .member-table th {
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    background: var(--bg-secondary);
+  }
+
+  .member-table td {
+    color: var(--text);
+  }
+
+  .member-table .codename {
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .member-table .note {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+
+  .doc-note {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    margin-bottom: 1.5rem;
+  }
+
+  .note-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .note-body {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .back-link {
+    font-size: 0.78rem;
+  }
+
+  .back-link a {
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .back-link a:hover {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>

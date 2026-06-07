@@ -1,0 +1,155 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { projects } from '../../data/projects.js';
+
+export function getStaticPaths() {
+  return projects.map((p) => ({
+    params: { slug: p.slug },
+    props: { project: p },
+  }));
+}
+
+const { project: p } = Astro.props;
+
+const statusColor = {
+  '진행 중': '#4a9eff',
+  '종결':    '#666666',
+};
+---
+<BaseLayout title={p.name}>
+  <div class="doc">
+
+    <div class="doc-header">
+      <div class="doc-name">{p.name}</div>
+      <span
+        class="doc-status"
+        style={`color: ${statusColor[p.status] ?? '#c8c8c8'}; border-color: ${statusColor[p.status] ?? '#2a2a2a'}`}
+      >
+        {p.status}
+      </span>
+    </div>
+    <div class="doc-subtitle">대상: {p.target} — EGO 내부 문서</div>
+
+    <div class="overview">
+      <div class="block-label">[ 개요 ]</div>
+      <p class="block-body">{p.description}</p>
+    </div>
+
+    <div class="details-section">
+      <div class="block-label">[ 세부 기록 ]</div>
+      {p.details.map((d) => (
+        <div class="detail-row">
+          <div class="detail-label">{d.label}</div>
+          <p class="detail-content">{d.content}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="back-link">
+      <a href="/projects">← 목록으로 돌아가기</a>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .doc {
+    max-width: 660px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
+  .doc-name {
+    font-size: 1.3rem;
+    letter-spacing: 0.15em;
+    color: var(--text-bright);
+  }
+
+  .doc-status {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    border: 1px solid;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .doc-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .overview {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    margin-bottom: 1.5rem;
+  }
+
+  .block-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .block-body {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .details-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .detail-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+
+  .details-section > .detail-row:first-of-type {
+    border-top: 1px solid var(--border);
+  }
+
+  .detail-label {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .detail-content {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .back-link {
+    font-size: 0.78rem;
+  }
+
+  .back-link a {
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .back-link a:hover {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>

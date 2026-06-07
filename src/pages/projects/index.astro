@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { projects } from '../../data/projects.js';
+
+const statusColor = {
+  '진행 중': '#4a9eff',
+  '종결':    '#666666',
+};
+---
+<BaseLayout title="프로젝트 기록">
+  <div class="page-header">
+    <h1 class="page-title">// 프로젝트 기록</h1>
+    <p class="page-subtitle">등록 건수 총 {projects.length}건</p>
+  </div>
+
+  <div class="card-grid">
+    {projects.map((p) => (
+      <a href={`/projects/${p.slug}`} class="card">
+        <div class="card-top">
+          <span class="card-name">{p.name}</span>
+          <span
+            class="card-status"
+            style={`color: ${statusColor[p.status] ?? '#c8c8c8'}`}
+          >
+            {p.status}
+          </span>
+        </div>
+        <div class="card-target">대상: {p.target}</div>
+        <p class="card-desc">{p.description}</p>
+      </a>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-blue);
+    margin-bottom: 0.3rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    display: block;
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+
+  .card:hover {
+    border-color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
+    color: var(--text-bright);
+    letter-spacing: 0.06em;
+  }
+
+  .card-status {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  .card-target {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 0.6rem;
+    letter-spacing: 0.04em;
+  }
+
+  .card-desc {
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+</style>

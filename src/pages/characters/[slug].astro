@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { characters } from '../../data/characters.js';
+
+export function getStaticPaths() {
+  return characters.map((c) => ({
+    params: { slug: c.slug },
+    props: { character: c },
+  }));
+}
+
+const { character: c } = Astro.props;
+
+const statusColor = {
+  '생존': '#4a9eff',
+  '소멸': '#ff4a4a',
+  '활동 중': '#ffaa4a',
+};
+
+const fields = [
+  { label: '이름',   value: c.name },
+  { label: '나이',   value: c.age },
+  { label: '소속',   value: c.school },
+  { label: '능력',   value: c.ability },
+  { label: '코드명', value: c.codename },
+  { label: '분류',   value: c.category },
+];
+---
+<BaseLayout title={c.name}>
+  <div class="doc">
+    <div class="doc-header">
+      <div class="doc-codename">{c.codename}</div>
+      <span
+        class="doc-status"
+        style={`color: ${statusColor[c.status] ?? '#c8c8c8'}; border-color: ${statusColor[c.status] ?? '#2a2a2a'}`}
+      >
+        {c.status}
+      </span>
+    </div>
+
+    <div class="doc-subtitle">인원 데이터 열람 — EGO 내부 문서</div>
+
+    <table class="doc-table">
+      <tbody>
+        {fields.map((f) => (
+          <tr>
+            <th>{f.label}</th>
+            <td>{f.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <div class="doc-note">
+      <div class="note-label">[ 비고 ]</div>
+      <p class="note-body">{c.description}</p>
+    </div>
+
+    <div class="back-link">
+      <a href="/characters">← 목록으로 돌아가기</a>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .doc {
+    max-width: 620px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
+  .doc-codename {
+    font-size: 1.3rem;
+    letter-spacing: 0.2em;
+    color: var(--text-bright);
+  }
+
+  .doc-status {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    border: 1px solid;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .doc-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .doc-table th,
+  .doc-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    text-align: left;
+    font-weight: normal;
+  }
+
+  .doc-table th {
+    width: 90px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    background: var(--bg-secondary);
+    white-space: nowrap;
+  }
+
+  .doc-table td {
+    color: var(--text);
+  }
+
+  .doc-note {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    margin-bottom: 1.5rem;
+  }
+
+  .note-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .note-body {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .back-link {
+    font-size: 0.78rem;
+  }
+
+  .back-link a {
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .back-link a:hover {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>

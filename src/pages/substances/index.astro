@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { substances } from '../../data/substances.js';
+
+const dangerColor = {
+  '고위험':   '#ff4a4a',
+  '중위험':   '#ffaa4a',
+  '최고위험': '#ff00ff',
+};
+---
+<BaseLayout title="초물질 데이터베이스">
+  <div class="page-header">
+    <h1 class="page-title">// 초물질 데이터베이스</h1>
+    <p class="page-subtitle">등록 항목 총 {substances.length}건</p>
+  </div>
+
+  <div class="card-grid">
+    {substances.map((s) => (
+      <a href={`/substances/${s.slug}`} class="card">
+        <div class="card-top">
+          <span class="card-name">{s.name}</span>
+          <span
+            class="card-danger"
+            style={`color: ${dangerColor[s.danger] ?? '#c8c8c8'}`}
+          >
+            {s.danger}
+          </span>
+        </div>
+        <div class="card-meta">
+          <span class="card-type">{s.type}</span>
+          <span class="card-status">{s.status}</span>
+        </div>
+        <p class="card-desc">{s.description}</p>
+      </a>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-blue);
+    margin-bottom: 0.3rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    display: block;
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+
+  .card:hover {
+    border-color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
+    color: var(--text-bright);
+    letter-spacing: 0.05em;
+  }
+
+  .card-danger {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .card-type,
+  .card-status {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .card-type::after {
+    content: '·';
+    margin-left: 0.75rem;
+  }
+
+  .card-desc {
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+</style>

@@ -1,0 +1,41 @@
+---
+import Header from '../components/Header.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+const { title = '메인' } = Astro.props;
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} — PROJECT 106</title>
+  </head>
+  <body>
+    <Header />
+    <div class="layout">
+      <Sidebar />
+      <main class="main">
+        <slot />
+      </main>
+    </div>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .layout {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+</style>

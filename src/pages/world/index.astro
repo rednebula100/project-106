@@ -1,0 +1,111 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { worldEntries } from '../../data/world.js';
+
+const categories = ['기반', '장소'];
+---
+<BaseLayout title="세계 구조 데이터베이스">
+  <div class="page-header">
+    <h1 class="page-title">// 세계 구조 데이터베이스</h1>
+    <p class="page-subtitle">등록 항목 총 {worldEntries.length}건</p>
+  </div>
+
+  {categories.map((cat) => {
+    const list = worldEntries.filter((e) => e.category === cat);
+    if (list.length === 0) return null;
+    return (
+      <section class="category-section">
+        <div class="category-label">[ {cat} ]</div>
+        <div class="card-grid">
+          {list.map((e) => (
+            <a href={`/world/${e.slug}`} class="card">
+              <div class="card-top">
+                <span class="card-name">{e.name}</span>
+                <span class="card-category">{e.category}</span>
+              </div>
+              <p class="card-desc">{e.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    );
+  })}
+</BaseLayout>
+
+<style>
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-blue);
+    margin-bottom: 0.3rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .category-section {
+    margin-bottom: 2rem;
+  }
+
+  .category-label {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .card {
+    display: block;
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+
+  .card:hover {
+    border-color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
+    color: var(--text-bright);
+    letter-spacing: 0.05em;
+  }
+
+  .card-category {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .card-desc {
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+</style>

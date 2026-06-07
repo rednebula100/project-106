@@ -1,0 +1,81 @@
+---
+---
+<aside class="sidebar">
+  <div class="section">
+    <div class="section-label">// 인원</div>
+    <ul>
+      <li><a href="/characters?category=주인공">주인공</a></li>
+      <li><a href="/characters?category=대립자">대립자</a></li>
+      <li><a href="/characters?category=배면세계">배면세계</a></li>
+      <li><a href="/characters?category=기타">기타</a></li>
+    </ul>
+  </div>
+  <div class="section">
+    <div class="section-label">// 조직</div>
+    <ul>
+      <li><a href="/organizations/ego">EGO</a></li>
+      <li><a href="/organizations/void-covenant">VOID COVENANT</a></li>
+    </ul>
+  </div>
+  <div class="section">
+    <div class="section-label">// 세계</div>
+    <ul>
+      <li><a href="/world/universe-structure">우주 구조</a></li>
+      <li><a href="/world/abyss">심연</a></li>
+      <li><a href="/world/reverse-world">배면세계</a></li>
+      <li><a href="/world/hyunmu-high">현무고등학교</a></li>
+    </ul>
+  </div>
+  <div class="section">
+    <div class="section-label">// 기록</div>
+    <ul>
+      <li><a href="/projects/project-106">PROJECT 106</a></li>
+      <li><a href="/projects/project-failures">실패 기록</a></li>
+      <li><a href="/timeline">연표</a></li>
+    </ul>
+  </div>
+</aside>
+
+<style>
+  .sidebar {
+    width: 180px;
+    min-width: 180px;
+    border-right: 1px solid var(--border);
+    padding: 1.25rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .section ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .section li a {
+    color: var(--text);
+    font-size: 0.78rem;
+    display: block;
+    padding: 0.2rem 0.5rem;
+    border-left: 2px solid transparent;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .section li a:hover {
+    color: var(--accent-blue);
+    border-left-color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>

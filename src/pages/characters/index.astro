@@ -1,0 +1,126 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { characters } from '../../data/characters.js';
+
+const categories = ['주인공', '대립자', '배면세계'];
+
+const statusColor = {
+  '생존': '#4a9eff',
+  '소멸': '#ff4a4a',
+  '활동 중': '#ffaa4a',
+};
+---
+<BaseLayout title="인원 데이터베이스">
+  <div class="page-header">
+    <h1 class="page-title">// 인원 데이터베이스</h1>
+    <p class="page-subtitle">등록 인원 총 {characters.length}명</p>
+  </div>
+
+  {categories.map((cat) => {
+    const list = characters.filter((c) => c.category === cat);
+    if (list.length === 0) return null;
+    return (
+      <section class="category-section">
+        <div class="category-label">[ {cat} ]</div>
+        <div class="card-grid">
+          {list.map((c) => (
+            <a href={`/characters/${c.slug}`} class="card">
+              <div class="card-top">
+                <span class="card-name">{c.name}</span>
+                <span class="card-status" style={`color: ${statusColor[c.status] ?? '#c8c8c8'}`}>
+                  {c.status}
+                </span>
+              </div>
+              <div class="card-codename">{c.codename}</div>
+              <div class="card-category">{c.category}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+    );
+  })}
+</BaseLayout>
+
+<style>
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-blue);
+    margin-bottom: 0.3rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .category-section {
+    margin-bottom: 2rem;
+  }
+
+  .category-label {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .card {
+    display: block;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+
+  .card:hover {
+    border-color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
+    color: var(--text-bright);
+    letter-spacing: 0.05em;
+  }
+
+  .card-status {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  .card-codename {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .card-category {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+</style>

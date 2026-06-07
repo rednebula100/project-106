@@ -1,0 +1,135 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { worldEntries } from '../../data/world.js';
+
+export function getStaticPaths() {
+  return worldEntries.map((e) => ({
+    params: { slug: e.slug },
+    props: { entry: e },
+  }));
+}
+
+const { entry: e } = Astro.props;
+---
+<BaseLayout title={e.name}>
+  <div class="doc">
+
+    <div class="doc-header">
+      <div class="doc-name">{e.name}</div>
+      <span class="doc-category">{e.category}</span>
+    </div>
+    <div class="doc-subtitle">세계 구조 데이터 — EGO 내부 문서</div>
+
+    <div class="overview">
+      <div class="block-label">[ 개요 ]</div>
+      <p class="block-body">{e.description}</p>
+    </div>
+
+    {e.details.map((d) => (
+      <div class="detail-block">
+        <div class="detail-label">{d.label}</div>
+        <p class="detail-content">{d.content}</p>
+      </div>
+    ))}
+
+    <div class="back-link">
+      <a href="/world">← 목록으로 돌아가기</a>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .doc {
+    max-width: 640px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
+  .doc-name {
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+    color: var(--text-bright);
+  }
+
+  .doc-category {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+  }
+
+  .doc-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .overview {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    margin-bottom: 1.5rem;
+  }
+
+  .block-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .block-body {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .detail-block {
+    border-left: 2px solid var(--border);
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+  }
+
+  .detail-block:hover {
+    border-left-color: var(--accent-blue);
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+
+  .detail-content {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.65;
+  }
+
+  .back-link {
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+  }
+
+  .back-link a {
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .back-link a:hover {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>

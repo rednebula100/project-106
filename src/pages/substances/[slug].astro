@@ -1,0 +1,183 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { substances } from '../../data/substances.js';
+
+export function getStaticPaths() {
+  return substances.map((s) => ({
+    params: { slug: s.slug },
+    props: { substance: s },
+  }));
+}
+
+const { substance: s } = Astro.props;
+
+const dangerColor = {
+  '고위험':   '#ff4a4a',
+  '중위험':   '#ffaa4a',
+  '최고위험': '#ff00ff',
+};
+
+const color = dangerColor[s.danger] ?? '#c8c8c8';
+---
+<BaseLayout title={s.name}>
+  <div class="doc">
+
+    <div class="doc-header">
+      <div class="doc-name">{s.name}</div>
+      <span
+        class="doc-danger"
+        style={`color: ${color}; border-color: ${color}`}
+      >
+        {s.danger}
+      </span>
+    </div>
+    <div class="doc-subtitle">{s.type} — EGO 초물질 분류 문서</div>
+
+    <table class="info-table">
+      <tbody>
+        <tr>
+          <th>위험도</th>
+          <td style={`color: ${color}`}>{s.danger}</td>
+        </tr>
+        <tr>
+          <th>확보 상태</th>
+          <td>{s.status}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="overview">
+      <div class="block-label">[ 개요 ]</div>
+      <p class="block-body">{s.description}</p>
+    </div>
+
+    {s.details.map((d) => (
+      <div class="detail-block">
+        <div class="detail-label">{d.label}</div>
+        <p class="detail-content">{d.content}</p>
+      </div>
+    ))}
+
+    <div class="back-link">
+      <a href="/substances">← 목록으로 돌아가기</a>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .doc {
+    max-width: 640px;
+  }
+
+  .doc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+  }
+
+  .doc-name {
+    font-size: 1.3rem;
+    letter-spacing: 0.15em;
+    color: var(--text-bright);
+  }
+
+  .doc-danger {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    border: 1px solid;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .doc-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-table th,
+  .info-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    text-align: left;
+    font-weight: normal;
+  }
+
+  .info-table th {
+    width: 90px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    background: var(--bg-secondary);
+    white-space: nowrap;
+  }
+
+  .overview {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+    margin-bottom: 1.5rem;
+  }
+
+  .block-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+
+  .block-body {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .detail-block {
+    border-left: 2px solid var(--border);
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+  }
+
+  .detail-block:hover {
+    border-left-color: var(--accent-blue);
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+
+  .detail-content {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.65;
+  }
+
+  .back-link {
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+  }
+
+  .back-link a {
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .back-link a:hover {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+</style>
