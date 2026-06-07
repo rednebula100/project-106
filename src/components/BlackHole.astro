@@ -21,6 +21,9 @@ import * as THREE from 'three';
   const canvas = document.getElementById('bh-canvas');
   if (!canvas) return;
 
+  // Move to body: avoids overflow-y:auto on <main> clipping position:fixed in some browsers
+  document.body.insertBefore(canvas, document.body.firstChild);
+
   const isMobile = window.innerWidth < 768;
   const dpr = isMobile ? 0.5 : Math.min(window.devicePixelRatio, 1.5);
 
