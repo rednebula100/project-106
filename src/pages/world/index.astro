@@ -18,7 +18,7 @@ const categories = ['기반', '장소'];
         <div class="category-label">[ {cat} ]</div>
         <div class="card-grid">
           {list.map((e) => (
-            <a href={`/world/${e.slug}`} class="card">
+            <a href={`${import.meta.env.BASE_URL}world/${e.slug}`} class="card">
               <div class="card-top">
                 <span class="card-name">{e.name}</span>
                 <span class="card-category">{e.category}</span>

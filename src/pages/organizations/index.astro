@@ -15,7 +15,7 @@ const statusColor = {
 
   <div class="card-grid">
     {organizations.map((org) => (
-      <a href={`/organizations/${org.slug}`} class="card">
+      <a href={`${import.meta.env.BASE_URL}organizations/${org.slug}`} class="card">
         <div class="card-top">
           <span class="card-name">{org.name}</span>
           <span

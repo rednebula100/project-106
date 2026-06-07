@@ -24,7 +24,7 @@ const statusColor = {
         <div class="category-label">[ {cat} ]</div>
         <div class="card-grid">
           {list.map((c) => (
-            <a href={`/characters/${c.slug}`} class="card">
+            <a href={`${import.meta.env.BASE_URL}characters/${c.slug}`} class="card">
               <div class="card-top">
                 <span class="card-name">{c.name}</span>
                 <span class="card-status" style={`color: ${statusColor[c.status] ?? '#c8c8c8'}`}>

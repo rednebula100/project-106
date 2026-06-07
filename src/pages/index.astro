@@ -1,36 +1,37 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
+const base = import.meta.env.BASE_URL;
 const sections = [
   {
     title: '캐릭터',
     desc: '등록된 인원 데이터베이스. 주인공, 대립자, 배면세계 거주자 및 기타 인원.',
-    href: '/characters',
+    href: `${base}characters`,
   },
   {
     title: '조직',
     desc: 'EGO 및 VOID COVENANT의 조직 구조, 위계, 운영 기록.',
-    href: '/organizations',
+    href: `${base}organizations`,
   },
   {
     title: '세계관',
     desc: '우주 구조, 심연, 배면세계, 현무고등학교 환경 분석 자료.',
-    href: '/world',
+    href: `${base}world`,
   },
   {
     title: '프로젝트 기록',
     desc: 'PROJECT 106 진행 현황 및 과거 실패 기록 열람.',
-    href: '/projects',
+    href: `${base}projects`,
   },
   {
     title: '연표',
     desc: '인가된 사건 발생 순서 및 타임라인 정렬 데이터.',
-    href: '/timeline',
+    href: `${base}timeline`,
   },
   {
     title: '초물질',
     desc: '초물질 분류, 특성, 위험도 평가 및 상호작용 연구 자료.',
-    href: '/substances',
+    href: `${base}substances`,
   },
 ];
 ---

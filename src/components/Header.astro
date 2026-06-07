@@ -1,18 +1,18 @@
 ---
 ---
 <header class="header">
-  <a href="/" class="header-logo">
+  <a href={import.meta.env.BASE_URL} class="header-logo">
     <span class="bracket">[</span>
     <span class="logo-text">PROJECT 106</span>
     <span class="bracket">]</span>
   </a>
   <nav class="header-nav">
-    <a href="/characters">캐릭터</a>
-    <a href="/organizations">조직</a>
-    <a href="/world">세계관</a>
-    <a href="/projects">프로젝트</a>
-    <a href="/timeline">연표</a>
-    <a href="/substances">초물질</a>
+    <a href={`${import.meta.env.BASE_URL}characters`}>캐릭터</a>
+    <a href={`${import.meta.env.BASE_URL}organizations`}>조직</a>
+    <a href={`${import.meta.env.BASE_URL}world`}>세계관</a>
+    <a href={`${import.meta.env.BASE_URL}projects`}>프로젝트</a>
+    <a href={`${import.meta.env.BASE_URL}timeline`}>연표</a>
+    <a href={`${import.meta.env.BASE_URL}substances`}>초물질</a>
   </nav>
   <div class="header-status">
     <span class="status-dot"></span>
