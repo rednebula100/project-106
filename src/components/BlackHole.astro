@@ -2,40 +2,52 @@
 ---
 <script is:inline>
 (async function () {
-  let THREE;
+  var THREE, EffectComposer, RenderPass, UnrealBloomPass, ShaderPass;
   try {
-    THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
+    THREE = await import('three');
+    var mods = await Promise.all([
+      import('three/addons/postprocessing/EffectComposer.js'),
+      import('three/addons/postprocessing/RenderPass.js'),
+      import('three/addons/postprocessing/UnrealBloomPass.js'),
+      import('three/addons/postprocessing/ShaderPass.js'),
+    ]);
+    EffectComposer  = mods[0].EffectComposer;
+    RenderPass      = mods[1].RenderPass;
+    UnrealBloomPass = mods[2].UnrealBloomPass;
+    ShaderPass      = mods[3].ShaderPass;
   } catch (e) {
-    console.error('[BH] THREE load failed:', e);
+    console.error('[BH] load failed:', e);
     return;
   }
 
-  const canvas = document.createElement('canvas');
+  var canvas = document.createElement('canvas');
   canvas.id = 'bh-canvas';
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block;';
   document.body.insertBefore(canvas, document.body.firstChild);
 
-  const isMobile = window.innerWidth < 768;
-  const dpr = isMobile ? 0.5 : Math.min(window.devicePixelRatio, 1.5);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true });
-  renderer.setPixelRatio(dpr);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  var isMobile = window.innerWidth < 768;
+  var dpr = isMobile ? 0.5 : Math.min(window.devicePixelRatio, 1.5);
+  var W = window.innerWidth, H = window.innerHeight;
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !isMobile });
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x000000, 1);
+
+  var scene  = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 1000);
   camera.position.set(0, 21, 77);
   camera.lookAt(0, 0, 0);
 
   // ── Stars ──
-  const STAR_COUNT = 1800;
-  const starPos = new Float32Array(STAR_COUNT * 3);
-  for (var i = 0; i < STAR_COUNT; i++) {
+  var starPos = new Float32Array(1800 * 3);
+  for (var i = 0; i < 1800; i++) {
     var theta = Math.random() * Math.PI * 2;
     var phi   = Math.acos(2 * Math.random() - 1);
     var r     = 130 + Math.random() * 70;
-    starPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-    starPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    starPos[i * 3 + 2] = r * Math.cos(phi);
+    starPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    starPos[i*3+2] = r * Math.cos(phi);
   }
   var starGeo = new THREE.BufferGeometry();
   starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
@@ -44,12 +56,10 @@
   })));
 
   var BH_R = 7.5, DISK_IN = 9.5, DISK_OUT = 30.0;
-  // Camera fixed at (0,21,77): xz direction from origin to camera = (0,0,1)
   var CAM_DIR = new THREE.Vector3(0, 0, 1);
 
   var diskVS = `
-    uniform vec3 uCamDir;
-    uniform float uBHR;
+    uniform vec3 uCamDir; uniform float uBHR;
     varying vec3 vWP;
     void main() {
       vec3 wp = (modelMatrix * vec4(position, 1.0)).xyz;
@@ -64,14 +74,11 @@
   `;
 
   var diskFS = `
-    uniform float uTime;
-    uniform float uAlpha;
-    uniform vec3 uCamDir;
+    uniform float uTime; uniform float uAlpha; uniform vec3 uCamDir;
     varying vec3 vWP;
     void main() {
       float r = length(vWP.xz);
-      float t = clamp((r - 9.5) / (30.0 - 9.5), 0.0, 1.0);
-
+      float t = clamp((r - 9.5) / 20.5, 0.0, 1.0);
       vec3 c0 = vec3(1.00, 1.00, 1.00);
       vec3 c1 = vec3(1.00, 0.87, 0.53);
       vec3 c2 = vec3(1.00, 0.53, 0.00);
@@ -82,18 +89,18 @@
       else if (t < 0.38) col = mix(c1, c2, (t - 0.18) / 0.20);
       else if (t < 0.60) col = mix(c2, c3, (t - 0.38) / 0.22);
       else               col = mix(c3, c4, (t - 0.60) / 0.40);
-
       float ang = atan(vWP.z, vWP.x);
       col *= 1.0
         + 0.14 * sin(ang *  5.0 + uTime * 0.7)
         + 0.09 * sin(ang * 11.0 - uTime * 0.5)
         + 0.06 * sin(ang * 19.0 + uTime * 0.3)
         + 0.04 * sin(ang * 31.0 - uTime * 0.2);
-
       vec2 tangent = normalize(vec2(-vWP.z, vWP.x));
-      col *= max(0.0, 1.0 + 0.45 * dot(tangent, uCamDir.xz));
+      float dop   = dot(tangent, uCamDir.xz);
+      float boost = pow(max(0.0, 1.0 + dop), 3.0);
+      float dim   = pow(max(0.0, 1.0 - dop * 0.8), 2.0);
+      col *= boost * dim;
       col *= 1.0 + 0.08 * sin(uTime * 3.7 + ang * 2.0) * (1.0 - t);
-
       float bri = mix(2.0, 0.20, t);
       float a   = smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.72, 1.0, t));
       gl_FragColor = vec4(col * bri, a * uAlpha);
@@ -108,46 +115,65 @@
         uCamDir: { value: CAM_DIR.clone() },
         uBHR:    { value: BH_R },
       },
-      vertexShader: diskVS,
-      fragmentShader: diskFS,
+      vertexShader: diskVS, fragmentShader: diskFS,
       transparent: true, side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
     });
   }
 
-  var diskGeom = new THREE.RingGeometry(DISK_IN, DISK_OUT, 256, 64);
+  var diskGeom   = new THREE.RingGeometry(DISK_IN, DISK_OUT, 256, 64);
   var allDiskMats = [];
-
-  // Three disk layers: lower / main / upper — fixed, no rotation
   [[-0.8, 0.55], [0, 0.93], [0.8, 0.55]].forEach(function (pair) {
-    var mat  = makeDiskMat(pair[1]);
+    var mat = makeDiskMat(pair[1]);
     allDiskMats.push(mat);
-    var mesh = new THREE.Mesh(diskGeom, mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.y = pair[0];
-    mesh.renderOrder = 0;
-    scene.add(mesh);
+    var m = new THREE.Mesh(diskGeom, mat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.y  = pair[0];
+    m.renderOrder = 0;
+    scene.add(m);
   });
+
+  // ── Einstein arc (secondary image approximation) ──
+  var arcMat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0.0 } },
+    vertexShader: `
+      varying vec3 vPos;
+      void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      uniform float uTime; varying vec3 vPos;
+      void main() {
+        float h = clamp((vPos.y + 8.25) / 16.5, 0.0, 1.0);
+        vec3 col = mix(vec3(1.0,0.60,0.20), vec3(1.0,0.95,0.80), h);
+        col *= 1.0 + 0.12 * sin(uTime * 1.8 + vPos.y * 0.3);
+        gl_FragColor = vec4(col * 1.8, 0.8);
+      }
+    `,
+    transparent: true, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
+  });
+  var arcMesh = new THREE.Mesh(new THREE.TorusGeometry(BH_R * 1.1, 0.3, 8, 96), arcMat);
+  arcMesh.rotation.y = Math.PI / 2;
+  arcMesh.renderOrder = 0;
+  scene.add(arcMesh);
 
   // ── Orange ambient glow ──
   scene.add(new THREE.Mesh(
     new THREE.SphereGeometry(28, 32, 32),
     new THREE.ShaderMaterial({
-      vertexShader: `varying vec3 vN,vV; void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+      vertexShader:   `varying vec3 vN,vV; void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
       fragmentShader: `varying vec3 vN,vV; void main(){ float f=pow(1.0-abs(dot(vN,vV)),3.5); gl_FragColor=vec4(1.0,0.45,0.05,f*0.18); }`,
-      transparent: true, side: THREE.BackSide,
-      blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+      transparent: true, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     })
   ));
 
-  // ── Rim light (event horizon boundary) ──
+  // ── Rim light ──
   var rimMesh = new THREE.Mesh(
     new THREE.SphereGeometry(BH_R * 1.12, 64, 64),
     new THREE.ShaderMaterial({
-      vertexShader: `varying vec3 vN,vV; void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+      vertexShader:   `varying vec3 vN,vV; void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
       fragmentShader: `varying vec3 vN,vV; void main(){ float f=pow(1.0-abs(dot(vN,vV)),1.8); vec3 col=mix(vec3(1.0,0.55,0.1),vec3(1.0,0.95,0.8),f); gl_FragColor=vec4(col,f*0.75); }`,
-      transparent: true, side: THREE.FrontSide,
-      blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+      transparent: true, side: THREE.FrontSide, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     })
   );
   rimMesh.renderOrder = 3;
@@ -161,22 +187,61 @@
   blackHole.renderOrder = 2;
   scene.add(blackHole);
 
-  // ── Animation (shader shimmer only — disk and camera are fixed) ──
+  // ── EffectComposer: Bloom → Lensing ──
+  var composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  var bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(W, H),
+    isMobile ? 0.6 : 1.2,
+    0.4,
+    0.3
+  );
+  composer.addPass(bloomPass);
+
+  // Lensing pass — compute BH screen position once (camera is fixed)
+  var bhNDC   = new THREE.Vector3(0, 0, 0).project(camera);
+  var edgeNDC = new THREE.Vector3(BH_R, 0, 0).project(camera);
+  var lensPass = new ShaderPass({
+    uniforms: {
+      tDiffuse:  { value: null },
+      uBHScreen: { value: new THREE.Vector2((bhNDC.x + 1) * 0.5, (bhNDC.y + 1) * 0.5) },
+      uBHRadius: { value: Math.abs((edgeNDC.x - bhNDC.x) * 0.5) },
+    },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uBHScreen;
+      uniform float uBHRadius;
+      varying vec2 vUv;
+      void main() {
+        vec2 delta = vUv - uBHScreen;
+        float dist = max(length(delta), 0.001);
+        if (dist < uBHRadius * 0.9) { gl_FragColor = texture2D(tDiffuse, vUv); return; }
+        float warp = uBHRadius / (dist * dist);
+        vec2 warpedUV = clamp(vUv + normalize(delta) * warp * 0.03, 0.001, 0.999);
+        gl_FragColor = texture2D(tDiffuse, warpedUV);
+      }
+    `,
+  });
+  composer.addPass(lensPass);
+
+  // ── Animation ──
   var elapsed = 0;
   function animate() {
     requestAnimationFrame(animate);
     elapsed += 0.006;
-    for (var j = 0; j < allDiskMats.length; j++) {
-      allDiskMats[j].uniforms.uTime.value = elapsed;
-    }
-    renderer.render(scene, camera);
+    for (var j = 0; j < allDiskMats.length; j++) allDiskMats[j].uniforms.uTime.value = elapsed;
+    arcMat.uniforms.uTime.value = elapsed;
+    composer.render();
   }
   animate();
 
   window.addEventListener('resize', function () {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(w, h);
   });
 })();
 </script>
