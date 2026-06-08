@@ -51,6 +51,12 @@ const fields = [
       </tbody>
     </table>
 
+    {c.image && (
+      <div class="doc-image">
+        <img src={`${import.meta.env.BASE_URL}images/${c.image}`} alt={c.name} />
+      </div>
+    )}
+
     <div class="doc-note">
       <div class="note-label">[ 비고 ]</div>
       <p class="note-body">{c.description}</p>
@@ -155,5 +161,16 @@ const fields = [
   .back-link a:hover {
     color: var(--accent-blue);
     text-decoration: none;
+  }
+
+  .doc-image {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+  }
+
+  .doc-image img {
+    width: 100%;
+    display: block;
+    filter: grayscale(20%);
   }
 </style>
