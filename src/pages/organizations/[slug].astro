@@ -49,6 +49,12 @@ const hasCodename = org.members.some((m) => m.codename);
       </tbody>
     </table>
 
+    {org.logo && (
+      <div class="doc-image">
+        <img src={`${import.meta.env.BASE_URL}images/${org.logo}`} alt={org.name} />
+      </div>
+    )}
+
     {org.divisions.length > 0 && (
       <div class="section">
         <div class="section-label">[ 내부 직군 ]</div>
@@ -248,5 +254,16 @@ const hasCodename = org.members.some((m) => m.codename);
   .back-link a:hover {
     color: var(--accent-blue);
     text-decoration: none;
+  }
+
+  .doc-image {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+  }
+
+  .doc-image img {
+    width: 100%;
+    display: block;
+    filter: grayscale(20%);
   }
 </style>
