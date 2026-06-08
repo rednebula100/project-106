@@ -1,239 +1,226 @@
 ---
 ---
 <script is:inline>
-(async function () {
-  var THREE, EffectComposer, RenderPass, UnrealBloomPass, ShaderPass;
-  try {
-    THREE = await import('three');
-    var mods = await Promise.all([
-      import('three/addons/postprocessing/EffectComposer.js'),
-      import('three/addons/postprocessing/RenderPass.js'),
-      import('three/addons/postprocessing/UnrealBloomPass.js'),
-      import('three/addons/postprocessing/ShaderPass.js'),
-    ]);
-    EffectComposer  = mods[0].EffectComposer;
-    RenderPass      = mods[1].RenderPass;
-    UnrealBloomPass = mods[2].UnrealBloomPass;
-    ShaderPass      = mods[3].ShaderPass;
-  } catch (e) {
-    console.error('[BH] load failed:', e);
-    return;
-  }
-
+(function () {
   var canvas = document.createElement('canvas');
   canvas.id = 'bh-canvas';
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block;';
   document.body.insertBefore(canvas, document.body.firstChild);
 
+  var gl = canvas.getContext('webgl2');
+  if (!gl) { console.warn('[BH] WebGL2 not supported'); return; }
+
+  var VS = `#version 300 es
+in vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+  var FS = `#version 300 es
+precision highp float;
+uniform vec2 uResolution;
+uniform float uTime;
+out vec4 fragColor;
+
+// ── hash / noise ──
+float hash11(float p) {
+  p = fract(p * 0.1031);
+  p *= p + 33.33;
+  p *= p + p;
+  return fract(p);
+}
+float hash21(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+// ── star field ──
+float stars(vec2 uv) {
+  vec2 cell = floor(uv * 200.0);
+  vec2 local = fract(uv * 200.0);
+  float h = hash21(cell);
+  if (h > 0.985) {
+    float size = 0.5 + hash21(cell + 7.3) * 0.5;
+    float d = length(local - 0.5);
+    float s = smoothstep(size * 0.012, 0.0, d);
+    float twinkle = 0.8 + 0.2 * sin(uTime * (2.0 + h * 4.0) + h * 6.28);
+    return s * twinkle;
+  }
+  return 0.0;
+}
+
+// ── accretion disk color ──
+vec3 diskColor(float t) {
+  vec3 c0 = vec3(1.00, 1.00, 1.00);
+  vec3 c1 = vec3(1.00, 0.87, 0.53);
+  vec3 c2 = vec3(1.00, 0.53, 0.00);
+  vec3 c3 = vec3(1.00, 0.20, 0.00);
+  vec3 c4 = vec3(0.25, 0.03, 0.00);
+  if      (t < 0.18) return mix(c0, c1, t / 0.18);
+  else if (t < 0.38) return mix(c1, c2, (t - 0.18) / 0.20);
+  else if (t < 0.60) return mix(c2, c3, (t - 0.38) / 0.22);
+  else               return mix(c3, c4, (t - 0.60) / 0.40);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uResolution;
+  // aspect-correct UV (x stretched to aspect ratio)
+  float aspect = uResolution.x / uResolution.y;
+  vec2 auv = vec2(uv.x * aspect, uv.y);
+
+  // black hole center in aspect-corrected space
+  vec2 bhPos = vec2(0.6 * aspect, 0.45);
+
+  // ── gravity warp ──
+  float SR = 0.018;           // Schwarzschild radius (UV units)
+  float BH_R = 0.040;         // visual black hole radius
+  float DISK_IN  = 0.048;
+  float DISK_OUT = 0.180;
+
+  vec2 toCenter = auv - bhPos;
+  float dist = length(toCenter);
+
+  // warp background UVs
+  float warp = SR / max(dist * dist, 0.0001);
+  vec2 warpDir = dist > 0.0001 ? normalize(toCenter) : vec2(0.0);
+  vec2 warpedAUV = auv + warpDir * warp;
+  // convert back to [0,1] UV for star sampling
+  vec2 warpedUV = vec2(warpedAUV.x / aspect, warpedAUV.y);
+
+  // ── background: stars ──
+  float starBrightness = stars(warpedUV);
+  vec3 col = vec3(starBrightness);
+
+  // ── event horizon ──
+  if (dist < BH_R) {
+    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+
+  // ── accretion disk ──
+  // Disk is a thin horizontal band; we detect it by checking if the pixel
+  // is within a vertical slice (diskThickness) and radial range.
+  float diskThickness = 0.013;
+  float vertDist = abs(toCenter.y);           // vertical distance from BH center
+  float diskR = dist / DISK_IN;               // normalized radial position
+
+  if (diskR > 1.0 && dist < DISK_OUT && vertDist < diskThickness * (1.0 + 0.5 * (1.0 - dist / DISK_OUT))) {
+    float t = clamp((dist - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0);
+    vec3 diskCol = diskColor(t);
+
+    // turbulence
+    float ang = atan(toCenter.y, toCenter.x);
+    diskCol *= 1.0
+      + 0.14 * sin(ang *  5.0 + uTime * 0.7)
+      + 0.09 * sin(ang * 11.0 - uTime * 0.5)
+      + 0.06 * sin(ang * 19.0 + uTime * 0.3)
+      + 0.04 * sin(ang * 31.0 - uTime * 0.2);
+
+    // Doppler: tangent direction projected onto camera direction (rightward = +x = approaching)
+    // In screen space: disk rotates CCW viewed from above; left side approaches camera.
+    float dop = -toCenter.x / max(dist, 0.001);  // -1 left, +1 right
+    diskCol *= pow(max(0.0, 1.0 + 0.5 * dop), 3.0);
+
+    // brightness falloff
+    float bri = mix(2.4, 0.25, t);
+    // soft edges (vertical fade)
+    float edgeFade = 1.0 - smoothstep(0.7, 1.0, vertDist / (diskThickness * (1.0 + 0.5 * (1.0 - dist / DISK_OUT))));
+    float radFade  = smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.75, 1.0, t));
+
+    float diskAlpha = edgeFade * radFade;
+    col = mix(col, diskCol * bri, diskAlpha);
+  }
+
+  // ── gravitational lensing arc (secondary image / Einstein ring) ──
+  // Appears as a thin bright arc just outside the shadow, above and below
+  float arcR = BH_R * 1.22;
+  float arcDist = abs(dist - arcR);
+  if (arcDist < 0.006) {
+    float arcFade = 1.0 - arcDist / 0.006;
+    arcFade = arcFade * arcFade;
+    // arc is brightest top and bottom (perpendicular to disk plane)
+    float arcAng = abs(toCenter.y) / max(dist, 0.001);  // 1 at top/bottom, 0 at sides
+    arcFade *= mix(0.3, 1.0, arcAng);
+    vec3 arcCol = vec3(1.0, 0.92, 0.72) * 2.0;
+    arcCol *= 1.0 + 0.08 * sin(uTime * 2.0 + dist * 120.0);
+    col += arcCol * arcFade * 0.85;
+  }
+
+  // ── rim glow at event horizon edge ──
+  float rimZone = BH_R * 1.18;
+  if (dist > BH_R && dist < rimZone) {
+    float rimT = (dist - BH_R) / (rimZone - BH_R);
+    float rimF = pow(1.0 - rimT, 2.2);
+    vec3 rimCol = mix(vec3(1.0, 0.55, 0.1), vec3(1.0, 0.95, 0.8), rimF);
+    col += rimCol * rimF * 0.35;
+  }
+
+  fragColor = vec4(col, 1.0);
+}
+`;
+
+  function compile(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error('[BH] shader error:', gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+
+  var vs = compile(gl.VERTEX_SHADER, VS);
+  var fs = compile(gl.FRAGMENT_SHADER, FS);
+  if (!vs || !fs) return;
+
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error('[BH] link error:', gl.getProgramInfoLog(prog));
+    return;
+  }
+  gl.useProgram(prog);
+
+  // fullscreen quad
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,  1, -1, -1,  1,
+    -1,  1,  1, -1,  1,  1,
+  ]), gl.STATIC_DRAW);
+  var aPos = gl.getAttribLocation(prog, 'aPos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  var uRes  = gl.getUniformLocation(prog, 'uResolution');
+  var uTime = gl.getUniformLocation(prog, 'uTime');
+
   var isMobile = window.innerWidth < 768;
   var dpr = isMobile ? 0.5 : Math.min(window.devicePixelRatio, 1.5);
-  var W = window.innerWidth, H = window.innerHeight;
 
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !isMobile });
-  renderer.setPixelRatio(dpr);
-  renderer.setSize(W, H);
-  renderer.setClearColor(0x000000, 1);
-
-  var scene  = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 1000);
-  // Edge-on view ~6° elevation (Interstellar style)
-  camera.position.set(0, 8, 77);
-  camera.lookAt(0, 0, 0);
-
-  // ── Stars ──
-  var starPos = new Float32Array(1800 * 3);
-  for (var i = 0; i < 1800; i++) {
-    var theta = Math.random() * Math.PI * 2;
-    var phi   = Math.acos(2 * Math.random() - 1);
-    var r     = 130 + Math.random() * 70;
-    starPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-    starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    starPos[i*3+2] = r * Math.cos(phi);
+  function resize() {
+    var w = Math.round(window.innerWidth  * dpr);
+    var h = Math.round(window.innerHeight * dpr);
+    canvas.width  = w;
+    canvas.height = h;
+    gl.viewport(0, 0, w, h);
   }
-  var starGeo = new THREE.BufferGeometry();
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.25, sizeAttenuation: true, transparent: true, opacity: 0.7,
-  })));
+  resize();
 
-  var BH_R = 7.5, DISK_IN = 9.5, DISK_OUT = 30.0;
-  // Camera xz direction: (0,77).normalize() = (0,1) → vec3(0,0,1)
-  var CAM_DIR = new THREE.Vector3(0, 0, 1);
-
-  var diskVS = `
-    uniform vec3 uCamDir; uniform float uBHR;
-    varying vec3 vWP;
-    void main() {
-      vec3 wp = (modelMatrix * vec4(position, 1.0)).xyz;
-      vWP = wp;
-      float r  = length(wp.xz);
-      float fc = dot(normalize(wp.xz), uCamDir.xz);
-      float bf = smoothstep(0.1, 0.9, max(0.0, -fc));
-      float ls = pow(clamp(uBHR / max(r, uBHR + 0.01), 0.0, 1.0), 2.5);
-      vec3 disp = wp + vec3(0.0, bf * ls * 22.0, 0.0);
-      gl_Position = projectionMatrix * viewMatrix * vec4(disp, 1.0);
-    }
-  `;
-
-  var diskFS = `
-    uniform float uTime; uniform float uAlpha; uniform vec3 uCamDir;
-    varying vec3 vWP;
-    void main() {
-      float r = length(vWP.xz);
-      float t = clamp((r - 9.5) / 20.5, 0.0, 1.0);
-      vec3 c0 = vec3(1.00, 1.00, 1.00);
-      vec3 c1 = vec3(1.00, 0.87, 0.53);
-      vec3 c2 = vec3(1.00, 0.53, 0.00);
-      vec3 c3 = vec3(1.00, 0.20, 0.00);
-      vec3 c4 = vec3(0.25, 0.03, 0.00);
-      vec3 col;
-      if      (t < 0.18) col = mix(c0, c1, t / 0.18);
-      else if (t < 0.38) col = mix(c1, c2, (t - 0.18) / 0.20);
-      else if (t < 0.60) col = mix(c2, c3, (t - 0.38) / 0.22);
-      else               col = mix(c3, c4, (t - 0.60) / 0.40);
-      float ang = atan(vWP.z, vWP.x);
-      col *= 1.0
-        + 0.14 * sin(ang *  5.0 + uTime * 0.7)
-        + 0.09 * sin(ang * 11.0 - uTime * 0.5)
-        + 0.06 * sin(ang * 19.0 + uTime * 0.3)
-        + 0.04 * sin(ang * 31.0 - uTime * 0.2);
-      // Relativistic Doppler: approaching side brighter, receding dimmer
-      vec2 tangent = normalize(vec2(-vWP.z, vWP.x));
-      float dop = dot(tangent, uCamDir.xz);
-      col *= pow(max(0.0, 1.0 + 0.5 * dop), 3.0);
-      col *= 1.0 + 0.08 * sin(uTime * 3.7 + ang * 2.0) * (1.0 - t);
-      float bri = mix(2.2, 0.20, t);
-      float a   = smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.72, 1.0, t));
-      gl_FragColor = vec4(col * bri, a * uAlpha);
-    }
-  `;
-
-  function makeDiskMat(alpha) {
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        uTime:   { value: 0.0 },
-        uAlpha:  { value: alpha },
-        uCamDir: { value: CAM_DIR.clone() },
-        uBHR:    { value: BH_R },
-      },
-      vertexShader: diskVS, fragmentShader: diskFS,
-      transparent: true, side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
-    });
+  var start = performance.now();
+  function frame() {
+    requestAnimationFrame(frame);
+    var t = (performance.now() - start) * 0.001;
+    gl.useProgram(prog);
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, t);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
+  frame();
 
-  var diskGeom   = new THREE.RingGeometry(DISK_IN, DISK_OUT, 256, 64);
-  var allDiskMats = [];
-  [[-0.8, 0.55], [0, 0.93], [0.8, 0.55]].forEach(function (pair) {
-    var mat = makeDiskMat(pair[1]);
-    allDiskMats.push(mat);
-    var m = new THREE.Mesh(diskGeom, mat);
-    m.rotation.x = -Math.PI / 2;
-    m.position.y  = pair[0];
-    m.renderOrder = 0;
-    scene.add(m);
-  });
-
-  // ── Einstein arc (photon ring — thin bright ring at shadow edge) ──
-  // Default XY-plane torus faces the camera (+Z direction) → appears as ring around shadow
-  var arcMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0.0 } },
-    vertexShader: `
-      varying vec3 vPos;
-      void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
-    `,
-    fragmentShader: `
-      uniform float uTime; varying vec3 vPos;
-      void main() {
-        vec3 col = vec3(1.0, 0.92, 0.72);
-        col *= 1.0 + 0.08 * sin(uTime * 2.0 + vPos.y * 4.0);
-        gl_FragColor = vec4(col * 2.2, 0.85);
-      }
-    `,
-    transparent: true, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
-  });
-  var arcMesh = new THREE.Mesh(new THREE.TorusGeometry(BH_R * 1.2, 0.2, 8, 128), arcMat);
-  // No rotation: default XY plane, faces +Z (camera direction)
-  arcMesh.renderOrder = 0;
-  scene.add(arcMesh);
-
-  // ── Rim light (subtle event horizon boundary) ──
-  var rimMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(BH_R * 1.12, 64, 64),
-    new THREE.ShaderMaterial({
-      vertexShader:   `varying vec3 vN,vV; void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
-      fragmentShader: `varying vec3 vN,vV; void main(){ float f=pow(1.0-abs(dot(vN,vV)),2.2); vec3 col=mix(vec3(1.0,0.55,0.1),vec3(1.0,0.95,0.8),f); gl_FragColor=vec4(col,f*0.30); }`,
-      transparent: true, side: THREE.FrontSide,
-      blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
-    })
-  );
-  rimMesh.renderOrder = 3;
-  scene.add(rimMesh);
-
-  // ── Event horizon ──
-  var blackHole = new THREE.Mesh(
-    new THREE.SphereGeometry(BH_R, 64, 64),
-    new THREE.MeshBasicMaterial({ color: 0x000000 })
-  );
-  blackHole.renderOrder = 2;
-  scene.add(blackHole);
-
-  // ── EffectComposer: Bloom → Lensing ──
-  var composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-
-  var bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(W, H),
-    isMobile ? 0.35 : 0.65,  // strength: subtle, only inner bright parts
-    0.4,
-    0.65                      // threshold: only white/near-white blooms
-  );
-  composer.addPass(bloomPass);
-
-  // Lensing pass — BH projects to screen center (camera.lookAt(0,0,0))
-  var bhNDC   = new THREE.Vector3(0, 0, 0).project(camera);
-  var edgeNDC = new THREE.Vector3(BH_R, 0, 0).project(camera);
-  var lensPass = new ShaderPass({
-    uniforms: {
-      tDiffuse:  { value: null },
-      uBHScreen: { value: new THREE.Vector2((bhNDC.x + 1) * 0.5, (bhNDC.y + 1) * 0.5) },
-      uBHRadius: { value: Math.abs((edgeNDC.x - bhNDC.x) * 0.5) },
-    },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader: `
-      uniform sampler2D tDiffuse;
-      uniform vec2 uBHScreen;
-      uniform float uBHRadius;
-      varying vec2 vUv;
-      void main() {
-        vec2 delta = vUv - uBHScreen;
-        float dist = max(length(delta), 0.001);
-        if (dist < uBHRadius * 0.9) { gl_FragColor = texture2D(tDiffuse, vUv); return; }
-        float warp = uBHRadius / (dist * dist);
-        vec2 warpedUV = clamp(vUv + normalize(delta) * warp * 0.03, 0.001, 0.999);
-        gl_FragColor = texture2D(tDiffuse, warpedUV);
-      }
-    `,
-  });
-  composer.addPass(lensPass);
-
-  // ── Animation ──
-  var elapsed = 0;
-  function animate() {
-    requestAnimationFrame(animate);
-    elapsed += 0.006;
-    for (var j = 0; j < allDiskMats.length; j++) allDiskMats[j].uniforms.uTime.value = elapsed;
-    arcMat.uniforms.uTime.value = elapsed;
-    composer.render();
-  }
-  animate();
-
-  window.addEventListener('resize', function () {
-    var w = window.innerWidth, h = window.innerHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    composer.setSize(w, h);
-  });
+  window.addEventListener('resize', resize);
 })();
 </script>
