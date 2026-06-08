@@ -21,35 +21,27 @@ uniform vec2 uResolution;
 uniform float uTime;
 out vec4 fragColor;
 
-// ── hash / noise ──
-float hash11(float p) {
-  p = fract(p * 0.1031);
-  p *= p + 33.33;
-  p *= p + p;
-  return fract(p);
-}
 float hash21(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// ── star field ──
 float stars(vec2 uv) {
-  vec2 cell = floor(uv * 200.0);
-  vec2 local = fract(uv * 200.0);
+  vec2 cell  = floor(uv * 140.0);
+  vec2 local = fract(uv * 140.0);
   float h = hash21(cell);
-  if (h > 0.985) {
-    float size = 0.5 + hash21(cell + 7.3) * 0.5;
+  if (h > 0.968) {
+    float size   = 0.4 + hash21(cell + 7.3) * 0.6;
+    float bright = 0.65 + hash21(cell + 13.7) * 0.35;
     float d = length(local - 0.5);
-    float s = smoothstep(size * 0.012, 0.0, d);
-    float twinkle = 0.8 + 0.2 * sin(uTime * (2.0 + h * 4.0) + h * 6.28);
-    return s * twinkle;
+    float s = smoothstep(size * 0.016, 0.0, d);
+    float twinkle = 0.78 + 0.22 * sin(uTime * (2.0 + h * 4.0) + h * 6.28);
+    return s * twinkle * bright;
   }
   return 0.0;
 }
 
-// ── accretion disk color ──
 vec3 diskColor(float t) {
   vec3 c0 = vec3(1.00, 1.00, 1.00);
   vec3 c1 = vec3(1.00, 0.87, 0.53);
@@ -63,96 +55,106 @@ vec3 diskColor(float t) {
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  // aspect-correct UV (x stretched to aspect ratio)
+  vec2 uv    = gl_FragCoord.xy / uResolution;
   float aspect = uResolution.x / uResolution.y;
-  vec2 auv = vec2(uv.x * aspect, uv.y);
-
-  // black hole center in aspect-corrected space
+  vec2 auv   = vec2(uv.x * aspect, uv.y);
   vec2 bhPos = vec2(0.6 * aspect, 0.45);
 
-  // ── gravity warp ──
-  float SR = 0.018;           // Schwarzschild radius (UV units)
-  float BH_R = 0.040;         // visual black hole radius
+  float SR      = 0.018;
+  float BH_R    = 0.040;
   float DISK_IN  = 0.048;
-  float DISK_OUT = 0.180;
+  float DISK_OUT = 0.148;
 
-  vec2 toCenter = auv - bhPos;
-  float dist = length(toCenter);
+  vec2  toCenter = auv - bhPos;
+  float dist     = length(toCenter);
 
-  // warp background UVs
-  float warp = SR / max(dist * dist, 0.0001);
-  vec2 warpDir = dist > 0.0001 ? normalize(toCenter) : vec2(0.0);
-  vec2 warpedAUV = auv + warpDir * warp;
-  // convert back to [0,1] UV for star sampling
-  vec2 warpedUV = vec2(warpedAUV.x / aspect, warpedAUV.y);
+  // gravity warp for background stars
+  float warp    = SR / max(dist * dist, 0.0001);
+  vec2  warpDir = dist > 0.0001 ? normalize(toCenter) : vec2(0.0);
+  vec2  warpedUV = vec2((auv + warpDir * warp).x / aspect,
+                        (auv + warpDir * warp).y);
 
-  // ── background: stars ──
-  float starBrightness = stars(warpedUV);
-  vec3 col = vec3(starBrightness);
+  vec3 col = vec3(stars(warpedUV) * 1.3);
 
-  // ── event horizon ──
+  // event horizon
   if (dist < BH_R) {
     fragColor = vec4(0.0, 0.0, 0.0, 1.0);
     return;
   }
 
-  // ── accretion disk ──
-  // Disk is a thin horizontal band; we detect it by checking if the pixel
-  // is within a vertical slice (diskThickness) and radial range.
-  float diskThickness = 0.013;
-  float vertDist = abs(toCenter.y);           // vertical distance from BH center
-  float diskR = dist / DISK_IN;               // normalized radial position
+  // ── front accretion disk ──
+  float diskThick = 0.025;
+  float vertDist  = abs(toCenter.y);
+  // disk thickens slightly toward the inner edge (foreshortening)
+  float thickAtDist = diskThick * (1.0 + 0.4 * (1.0 - clamp((dist - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0)));
 
-  if (diskR > 1.0 && dist < DISK_OUT && vertDist < diskThickness * (1.0 + 0.5 * (1.0 - dist / DISK_OUT))) {
-    float t = clamp((dist - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0);
-    vec3 diskCol = diskColor(t);
-
-    // turbulence
+  if (dist > DISK_IN && dist < DISK_OUT && vertDist < thickAtDist) {
+    float t   = clamp((dist - DISK_IN) / (DISK_OUT - DISK_IN), 0.0, 1.0);
+    vec3 dcol = diskColor(t);
     float ang = atan(toCenter.y, toCenter.x);
-    diskCol *= 1.0
+    dcol *= 1.0
       + 0.14 * sin(ang *  5.0 + uTime * 0.7)
       + 0.09 * sin(ang * 11.0 - uTime * 0.5)
       + 0.06 * sin(ang * 19.0 + uTime * 0.3)
       + 0.04 * sin(ang * 31.0 - uTime * 0.2);
-
-    // Doppler: tangent direction projected onto camera direction (rightward = +x = approaching)
-    // In screen space: disk rotates CCW viewed from above; left side approaches camera.
-    float dop = -toCenter.x / max(dist, 0.001);  // -1 left, +1 right
-    diskCol *= pow(max(0.0, 1.0 + 0.5 * dop), 3.0);
-
-    // brightness falloff
-    float bri = mix(2.4, 0.25, t);
-    // soft edges (vertical fade)
-    float edgeFade = 1.0 - smoothstep(0.7, 1.0, vertDist / (diskThickness * (1.0 + 0.5 * (1.0 - dist / DISK_OUT))));
-    float radFade  = smoothstep(0.0, 0.08, t) * (1.0 - smoothstep(0.75, 1.0, t));
-
-    float diskAlpha = edgeFade * radFade;
-    col = mix(col, diskCol * bri, diskAlpha);
+    float dop = -toCenter.x / max(dist, 0.001);
+    dcol *= pow(max(0.0, 1.0 + 0.5 * dop), 3.0);
+    float bri      = mix(2.5, 0.25, t);
+    float vNorm    = vertDist / thickAtDist;
+    float edgeFade = exp(-vNorm * vNorm * 2.8);          // gaussian vertical falloff
+    float radFade  = smoothstep(0.0, 0.07, t) * (1.0 - smoothstep(0.80, 1.0, t));
+    col = mix(col, col + dcol * bri * edgeFade * radFade, edgeFade * radFade);
   }
 
-  // ── gravitational lensing arc (secondary image / Einstein ring) ──
-  // Appears as a thin bright arc just outside the shadow, above and below
-  float arcR = BH_R * 1.22;
-  float arcDist = abs(dist - arcR);
-  if (arcDist < 0.006) {
-    float arcFade = 1.0 - arcDist / 0.006;
-    arcFade = arcFade * arcFade;
-    // arc is brightest top and bottom (perpendicular to disk plane)
-    float arcAng = abs(toCenter.y) / max(dist, 0.001);  // 1 at top/bottom, 0 at sides
-    arcFade *= mix(0.3, 1.0, arcAng);
-    vec3 arcCol = vec3(1.0, 0.92, 0.72) * 2.0;
-    arcCol *= 1.0 + 0.08 * sin(uTime * 2.0 + dist * 120.0);
-    col += arcCol * arcFade * 0.85;
+  // ── upper lensed arc (back disk bent over the shadow) ──
+  // Models the secondary image as a thin semiellipse arcing above the shadow.
+  // Color: inner disk (hot) at the apex, cooler toward the sides.
+  // Doppler reversed (back disk approaching side is right).
+  float arcHalfW = DISK_OUT * 0.88;   // horizontal half-span
+  float arcPeakH = BH_R * 0.62;       // height directly above BH center
+  float absX     = abs(toCenter.x);
+
+  if (toCenter.y > 0.0 && absX < arcHalfW) {
+    // expected height follows a semiellipse
+    float xNorm    = absX / arcHalfW;
+    float arcY     = arcPeakH * sqrt(max(0.0, 1.0 - xNorm * xNorm));
+    float arcDiff  = abs(toCenter.y - arcY);
+    float arcThick = 0.0072;
+
+    if (arcDiff < arcThick && arcY > BH_R * 0.18) {
+      // color: apex (xNorm=0) → inner hot colors; sides (xNorm→1) → cooler
+      float t_arc = xNorm * 0.55;
+      vec3  acol  = diskColor(t_arc);
+      float ang   = atan(toCenter.y, toCenter.x);
+      acol *= 1.0 + 0.10 * sin(ang * 5.0 + uTime * 0.7)
+                  + 0.06 * sin(ang * 11.0 - uTime * 0.4);
+      // reversed Doppler: right side of back disk approaches
+      float dopArc = toCenter.x / max(dist, 0.001);
+      acol *= pow(max(0.0, 1.0 + 0.45 * dopArc), 2.5);
+      float fade  = 1.0 - arcDiff / arcThick;
+      fade = fade * fade;
+      float bri   = mix(1.7, 0.45, xNorm);
+      col += acol * bri * fade * 0.72;
+    }
   }
 
-  // ── rim glow at event horizon edge ──
+  // ── photon ring (thin bright ring at shadow edge) ──
+  float pRing = BH_R * 1.055;
+  float pDist = abs(dist - pRing);
+  if (pDist < 0.0035) {
+    float pFade = 1.0 - pDist / 0.0035;
+    pFade = pFade * pFade;
+    vec3 pCol = vec3(1.0, 0.96, 0.82) * 2.4;
+    pCol *= 1.0 + 0.06 * sin(uTime * 2.2 + dist * 160.0);
+    col += pCol * pFade * 0.55;
+  }
+
+  // ── rim glow at event horizon boundary ──
   float rimZone = BH_R * 1.18;
-  if (dist > BH_R && dist < rimZone) {
+  if (dist < rimZone) {
     float rimT = (dist - BH_R) / (rimZone - BH_R);
     float rimF = pow(1.0 - rimT, 2.2);
-    vec3 rimCol = mix(vec3(1.0, 0.55, 0.1), vec3(1.0, 0.95, 0.8), rimF);
-    col += rimCol * rimF * 0.35;
+    col += mix(vec3(1.0, 0.55, 0.1), vec3(1.0, 0.95, 0.8), rimF) * rimF * 0.30;
   }
 
   fragColor = vec4(col, 1.0);
