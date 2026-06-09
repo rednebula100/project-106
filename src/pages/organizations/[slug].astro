@@ -95,6 +95,53 @@ const hasCodename = org.members.some((m) => m.codename);
       <p class="note-body">{org.description}</p>
     </div>
 
+    {org.etl && org.etl.length > 0 && (
+      <div class="section">
+        <div class="section-label">[ 대상 위험도 분류 (ETL) ]</div>
+        <table class="data-table">
+          <thead><tr><th>등급</th><th>기준</th><th>설명</th></tr></thead>
+          <tbody>
+            {org.etl.map((e) => (
+              <tr>
+                <td class="mono">{e.level}</td>
+                <td>{e.label}</td>
+                <td>{e.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    {org.protocols && org.protocols.length > 0 && (
+      <div class="section">
+        <div class="section-label">[ 격리 프로토콜 ]</div>
+        <table class="data-table">
+          <thead><tr><th>코드</th><th>의미</th></tr></thead>
+          <tbody>
+            {org.protocols.map((r) => (
+              <tr>
+                <td class="mono">{r.code}</td>
+                <td>{r.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    {org.vignettes && org.vignettes.length > 0 && (
+      <div class="section">
+        <div class="section-label">[ 내부 일상 ]</div>
+        {org.vignettes.map((v) => (
+          <div class="vignette">
+            <div class="vignette-label">{v.label}</div>
+            <p class="vignette-body">{v.content}</p>
+          </div>
+        ))}
+      </div>
+    )}
+
     <div class="back-link">
       <a href={`${import.meta.env.BASE_URL}organizations`}>← 목록으로 돌아가기</a>
     </div>
@@ -265,5 +312,61 @@ const hasCodename = org.members.some((m) => m.codename);
     width: 100%;
     display: block;
     filter: grayscale(20%);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+    text-align: left;
+    font-weight: normal;
+  }
+
+  .data-table th {
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    background: var(--bg-secondary);
+  }
+
+  .data-table td {
+    color: var(--text);
+  }
+
+  .data-table .mono {
+    font-family: monospace;
+    color: var(--accent-blue);
+    letter-spacing: 0.05em;
+  }
+
+  .vignette {
+    border: 1px solid var(--border);
+    border-top: none;
+    background: var(--bg-surface);
+    padding: 0.75rem 1rem;
+  }
+
+  .vignette:first-of-type {
+    border-top: 1px solid var(--border);
+  }
+
+  .vignette-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+
+  .vignette-body {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre-line;
   }
 </style>
