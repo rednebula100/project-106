@@ -22,7 +22,7 @@ const hasCodename = org.members.some((m) => m.codename);
   <div class="doc">
 
     <div class="doc-header">
-      <div class="doc-name">{org.name}</div>
+      <div class="doc-name glitch" data-text={org.name}>{org.name}</div>
       <span
         class="doc-status"
         style={`color: ${statusColor[org.status] ?? '#c8c8c8'}; border-color: ${statusColor[org.status] ?? '#2a2a2a'}`}
@@ -40,7 +40,7 @@ const hasCodename = org.members.some((m) => m.codename);
         </tr>
         <tr>
           <th>국장</th>
-          <td>{org.director}</td>
+          <td>{org.director === '[REDACTED]' ? <span class="redacted">[REDACTED]</span> : org.director}</td>
         </tr>
         <tr>
           <th>부국장</th>
@@ -80,7 +80,7 @@ const hasCodename = org.members.some((m) => m.codename);
         <tbody>
           {org.members.map((m) => (
             <tr>
-              <td>{m.name}</td>
+              <td>{m.name === '[REDACTED]' ? <span class="redacted">[REDACTED]</span> : m.name}</td>
               <td>{m.role}</td>
               {hasCodename && <td class="codename">{m.codename ?? '—'}</td>}
               <td class="note">{m.note ?? '—'}</td>

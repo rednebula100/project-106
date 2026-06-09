@@ -102,6 +102,59 @@ body::after {
   to   { transform: translateY(100%); }
 }
 
+/* ── glitch text ── */
+.glitch {
+  position: relative;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glitch::before {
+  color: var(--accent-red);
+  animation: glitch-r 6s infinite steps(1);
+}
+.glitch::after {
+  color: var(--accent-blue);
+  animation: glitch-b 6s 0.08s infinite steps(1);
+}
+@keyframes glitch-r {
+  0%, 94%, 100%  { clip-path: inset(100% 0 0 0); transform: translate(0); }
+  95% { clip-path: inset(18% 0 65% 0); transform: translate(-3px, 0); }
+  96% { clip-path: inset(55% 0 28% 0); transform: translate(2px, 0); }
+  97% { clip-path: inset(8% 0 84% 0);  transform: translate(-1px, 0); }
+  98% { clip-path: inset(40% 0 50% 0); transform: translate(3px, 0); }
+}
+@keyframes glitch-b {
+  0%, 94%, 100%  { clip-path: inset(100% 0 0 0); transform: translate(0); }
+  95% { clip-path: inset(65% 0 18% 0); transform: translate(3px, 0); }
+  96% { clip-path: inset(28% 0 55% 0); transform: translate(-2px, 0); }
+  97% { clip-path: inset(84% 0 8% 0);  transform: translate(1px, 0); }
+  98% { clip-path: inset(50% 0 40% 0); transform: translate(-3px, 0); }
+}
+
+/* ── redacted text ── */
+.redacted {
+  background: var(--text);
+  color: transparent;
+  cursor: pointer;
+  user-select: none;
+  padding: 0 0.15em;
+}
+.redacted:hover {
+  animation: redact-reveal 0.35s steps(1) forwards;
+}
+@keyframes redact-reveal {
+  0%   { background: var(--text); color: transparent; }
+  25%  { background: transparent; color: var(--text); }
+  50%  { background: var(--text); color: transparent; }
+  75%  { background: transparent; color: var(--text); }
+  100% { background: transparent; color: var(--text); }
+}
+
 /* ── typing cursor ── */
 .type-cursor {
   color: var(--accent-blue);
