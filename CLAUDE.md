@@ -39,7 +39,15 @@ For multi-step tasks, state a brief plan:
 [Step] → verify: [check]
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 ---
-## 5. Project-Specific Context
+## 5. No Emoji — Ever
+**이모티콘 절대 금지. 아스키로 대체.**
+- 이모티콘(✅ ❌ 🔴 📌 등) 사용 금지 — 사이트 분위기를 망침
+- 대신 아스키 사용: [O] / [X] / [!] / -- / -> / * 등
+- 코드, 데이터 파일, 텍스트 콘텐츠 전부 해당
+- 커밋 메시지도 이모티콘 없이
+
+---
+## 6. Project-Specific Context
 이 프로젝트는 **PROJECT 106** 세계관 사이트다.
 - 프레임워크: Astro (정적 사이트)
 - 배포: GitHub Pages
