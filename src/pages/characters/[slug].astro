@@ -57,10 +57,37 @@ const fields = [
       </div>
     )}
 
+    {c.evolutionStages && (
+      <div class="evo-section">
+        <div class="note-label">[ 진화 단계 ]</div>
+        <div class="evo-grid">
+          {c.evolutionStages.map((s) => (
+            <div class="evo-card">
+              <div class="evo-stage">STAGE {s.stage}</div>
+              {s.image
+                ? <img src={`${import.meta.env.BASE_URL}images/${s.image}`} alt={s.name} />
+                : <div class="evo-no-image">—</div>
+              }
+              <div class="evo-name">{s.name}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
     <div class="doc-note">
       <div class="note-label">[ 비고 ]</div>
       <p class="note-body">{c.description}</p>
     </div>
+
+    {c.notes && c.notes.length > 0 && (
+      <div class="doc-note">
+        <div class="note-label">[ 추가 정보 ]</div>
+        <ul class="note-list">
+          {c.notes.map((n) => <li>{n}</li>)}
+        </ul>
+      </div>
+    )}
 
     <div class="back-link">
       <a href={`${import.meta.env.BASE_URL}characters`}>← 목록으로 돌아가기</a>
@@ -172,5 +199,79 @@ const fields = [
     width: 100%;
     display: block;
     filter: grayscale(20%);
+  }
+
+  .evo-section {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    background: var(--bg-surface);
+  }
+
+  .evo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+  }
+
+  .evo-card {
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .evo-stage {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .evo-card img {
+    width: 100%;
+    display: block;
+    filter: grayscale(20%);
+  }
+
+  .evo-no-image {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    opacity: 0.4;
+  }
+
+  .evo-name {
+    font-size: 0.7rem;
+    color: var(--text);
+    padding: 0.35rem 0.25rem;
+    letter-spacing: 0.04em;
+    border-top: 1px solid var(--border);
+  }
+
+  .note-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style: none;
+  }
+
+  .note-list li {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.7;
+    padding-left: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .note-list li::before {
+    content: "—";
+    color: var(--text-dim);
+    margin-right: 0.4rem;
+    margin-left: -1.2rem;
   }
 </style>
